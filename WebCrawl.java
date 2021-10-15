@@ -76,8 +76,7 @@ public class WebCrawl {
                     while (statusCode >= 300) {
                         if (statusCode >= 300 && statusCode < 400) {
                             nextURL = nextURLConnection.getHeaderField("Location");
-                            firstPartOfNextURL = nextURL.substring(0, 4);
-                            if (!firstPartOfNextURL.equalsIgnoreCase("http")) {
+                            if (!checkURLHTTPCorrect(nextURL)) {
                                 badURL = true;
                                 break;
                             } else {
@@ -206,6 +205,11 @@ public class WebCrawl {
         }
         String strURL = args[0];
         int numberURLHops = Integer.parseInt(args[1]);
+        if (!checkURLHTTPCorrect(strURL)) {
+            System.out.println("Please enter valid url");
+            System.exit(0);
+        }
+
         HttpURLConnection connection = createConnection(strURL);
         int statusCode = connection.getResponseCode();
 
@@ -213,17 +217,12 @@ public class WebCrawl {
             System.out.println("Please enter valid url");
             System.exit(0);
         }
-        String firstPartOfURL = strURL.substring(0, 4);
-        if (!firstPartOfURL.equalsIgnoreCase("http")) {
-            System.out.println("Please enter valid url starting with \"http\"");
-            System.exit(0);
-        }
+
 
         while ( statusCode >= 300) {
             strURL = connection.getHeaderField("Location");
-            firstPartOfURL = strURL.substring(0, 4);
 
-            if (!firstPartOfURL.equalsIgnoreCase("http")) {
+            if (!checkURLHTTPCorrect(strURL)) {
                 System.out.println("Please enter valid url starting with \"http\"");
                 System.exit(0);
             }
