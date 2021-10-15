@@ -35,7 +35,6 @@ public class WebCrawl {
             return 0;
         }
         BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-        System.out.println("buffer reader");
         String line;
         String substring;
         int locationOfHref;
@@ -45,7 +44,6 @@ public class WebCrawl {
         int statusCode;
         boolean badURL = false;
         HttpURLConnection nextURLConnection = null;
-        System.out.println("after next connection made null");
         String firstPartOfNextURL = "";
         while ((line = reader.readLine()) != null) {
             nextURLConnection = null;
@@ -56,28 +54,25 @@ public class WebCrawl {
                 //have a method for this to repeat
                 locationOfHref = line.indexOf("href");
                 substring = line.substring(locationOfHref);
-                System.out.println("found match substring is: " + substring);
+
                 String[] tokens = substring.split(delims, 0);
                 if (tokens.length > 1) {
                     nextURL = tokens[1];
                 } else {
                     continue;
                 }
-                if (nextURL.length() > 5) {
-                    firstPartOfNextURL = nextURL.substring(0, 4);
-                } else {
+
+                if (!(nextURL.length() > 8)) {
                     continue;
                 }
-                if (firstPartOfNextURL.equalsIgnoreCase("http")) {
+                if (checkURLHTTPCorrect(nextURL)) {
                     //check if string starts with http
-
                     nextURLConnection = createConnection(nextURL);
                     statusCode = nextURLConnection.getResponseCode();
                     if (statusCode >= 400) {
                         continue;
                     }
-                    System.out.println("before 300 while loop");
-
+                    //follow redirect until status code <300 or >400
                     while (statusCode >= 300) {
                         if (statusCode >= 300 && statusCode < 400) {
                             nextURL = nextURLConnection.getHeaderField("Location");
@@ -101,24 +96,14 @@ public class WebCrawl {
                 } else {
                     continue;
                 }
-                //check if url is http and not >400
 
                 //check if url is in the visitedURLS
-                System.out.println("change url to visit, next URL: " + nextURL);
+                boolean visitedBefore = checkVariationsOfURL(nextURL, visitedURLs);
 
-                nextURL = changeToHTTPS(nextURL);
-                boolean visitedBefore = false;
-                for (String s : visitedURLs) {
-                    if (s.equalsIgnoreCase(nextURL)) {
-                        visitedBefore = true;
-                        break;
-                    }
-                }
-                //check if url is http, if so then change to https
 
                 if (!visitedBefore) {
                     visitedURLs.add(nextURL);
-                    System.out.println(nextURL + " hops left:" + urlHopsLeft);
+                    System.out.println(nextURL + " Hops left: " + urlHopsLeft);
                     if (nextURLConnection != null) {
                         urlHopsLeft = findHrefInURL(nextURLConnection, --urlHopsLeft, visitedURLs);
                     }
@@ -131,38 +116,99 @@ public class WebCrawl {
         return urlHopsLeft;
     }
 
-    public static String changeToHTTPS(String currentURL) {
-        String firstFiveCharsOfURL = currentURL.substring(0, 5);
-        String firstFourCharsOfURL = currentURL.substring(0, 4);
-        String updatedURLToHTTPS = currentURL;
+    //returns true if has been visited before false otherwise
+    public static boolean checkVariationsOfURL(String currentURL, ArrayList<String> visited) {
+        boolean hasBackSlash = false;
+        boolean hasHTTPS = false;
+        String http = "http";
         String https = "https";
-        if (!firstFiveCharsOfURL.equalsIgnoreCase("https")) {
-            if (firstFourCharsOfURL.equalsIgnoreCase("http")) {
-                String removedHTTP = currentURL.substring(4);
-                updatedURLToHTTPS = https + removedHTTP;
+        char lastCharOfURL = currentURL.charAt(currentURL.length()-1);
+        String firstFive = currentURL.substring(0, 5);
+        String HTTPURLWithBackSlash;
+        String HTTPSURLWithBackSlash;
+        String HTTPURLWithoutBackSlash;
+        String HTTPSURLWithoutBackSlash;
+        if (firstFive.equalsIgnoreCase(https)) {
+            hasHTTPS = true;
+        }
+        if (lastCharOfURL =='/') {
+            hasBackSlash = true;
+        }
+        if (hasHTTPS && hasBackSlash) {
+            HTTPSURLWithBackSlash = currentURL;
+            HTTPSURLWithoutBackSlash = currentURL.substring(0, currentURL.length()-1);
+            HTTPURLWithBackSlash = http + currentURL.substring(5);
+            HTTPURLWithoutBackSlash = http + HTTPSURLWithoutBackSlash.substring(5);
+        } else if  (!hasHTTPS && !hasBackSlash) {
+            HTTPURLWithoutBackSlash = currentURL;
+            HTTPURLWithBackSlash = currentURL + "/";
+            HTTPSURLWithoutBackSlash = https + currentURL.substring(4);
+            HTTPSURLWithBackSlash = https + HTTPURLWithBackSlash.substring(4);
+        }
+        else if (!hasHTTPS && hasBackSlash) {
+            HTTPURLWithBackSlash = currentURL;
+            HTTPURLWithoutBackSlash = currentURL.substring(0, currentURL.length()-1);
+            HTTPSURLWithoutBackSlash = https + HTTPURLWithoutBackSlash.substring(4);
+            HTTPSURLWithBackSlash = https + currentURL.substring(4);
+        }
+        else if (hasHTTPS && !hasBackSlash) {
+            HTTPSURLWithoutBackSlash = currentURL;
+            HTTPSURLWithBackSlash = currentURL + "/";
+            HTTPURLWithBackSlash = http + HTTPSURLWithBackSlash.substring(5);
+            HTTPURLWithoutBackSlash = http + currentURL.substring(5);
+        }
+        else {
+            return false;
+        }
+
+        for (String s : visited) {
+            if (HTTPSURLWithBackSlash.equalsIgnoreCase(s)) {
+                return true;
             }
-            else {
-                return null;
+            else if (HTTPSURLWithoutBackSlash.equalsIgnoreCase(s)) {
+                return true;
+            }
+            else if (HTTPURLWithBackSlash.equalsIgnoreCase(s)) {
+                return true;
+            }
+            else if (HTTPURLWithoutBackSlash.equalsIgnoreCase(s)) {
+                return true;
             }
         }
-//        char lastCharOfURL = updatedURLToHTTPS.charAt(updatedURLToHTTPS.length()-1);
-//
-//        if (lastCharOfURL != '/') {
-//            updatedURLToHTTPS += "/";
-//        }
-        return updatedURLToHTTPS;
+        return false;
     }
+
+    //checks url if it is in the format of https:// or http://
+    public static boolean checkURLHTTPCorrect( String url) {
+        String http = "http";
+        String https = "https";
+        String httpsStart = "https://";
+        String httpStart = "http://";
+
+        String firstFourCharsOfURL = url.substring(0, 4);
+        String firstFiveCharsOfURL = url.substring(0, 5);
+        String firstSevenCharsOfURL = url.substring(0, 7);
+        String firstEightCharsOfURL = url.substring(0, 8);
+
+        if (firstFiveCharsOfURL.equalsIgnoreCase(https)) {
+            return firstEightCharsOfURL.equalsIgnoreCase(httpsStart);
+        }
+        if (firstFourCharsOfURL.equalsIgnoreCase(http)) {
+            return firstSevenCharsOfURL.equalsIgnoreCase(httpStart);
+        }
+        return false;
+    }
+
     public static void main(String[] args) throws IOException  {
         if (args.length < 2) {
             System.out.println("Please enter url and number of hops");
             System.exit(0);
         }
         String strURL = args[0];
-        System.out.println(strURL);
         int numberURLHops = Integer.parseInt(args[1]);
         HttpURLConnection connection = createConnection(strURL);
-        System.out.println("after connection");
         int statusCode = connection.getResponseCode();
+
         if (statusCode >= 400) {
             System.out.println("Please enter valid url");
             System.exit(0);
@@ -172,6 +218,7 @@ public class WebCrawl {
             System.out.println("Please enter valid url starting with \"http\"");
             System.exit(0);
         }
+
         while ( statusCode >= 300) {
             strURL = connection.getHeaderField("Location");
             firstPartOfURL = strURL.substring(0, 4);
@@ -187,11 +234,10 @@ public class WebCrawl {
                 System.exit(0);
             }
         }
-        //replace strURL with https
-        strURL = changeToHTTPS(strURL);
+
+
         ArrayList <String> visitedURLs = new ArrayList<String>();
         visitedURLs.add(strURL);
-        System.out.println("passed connection in main");
         numberURLHops = findHrefInURL(connection, --numberURLHops, visitedURLs);
         if (numberURLHops > 0) {
             System.out.println("Ran out of websites to hop to");
