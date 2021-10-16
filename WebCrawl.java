@@ -7,8 +7,6 @@ import java.net.URL;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.ArrayList; // import just the List interface
-import java.util.List; // import just the List interface
-import java.util.*;
 
 public class WebCrawl {
     public static HttpURLConnection createConnection (String strURL) throws IOException {
@@ -18,15 +16,6 @@ public class WebCrawl {
         return connection;
     }
 
-    //checks url connection returns false if status code is >= 300 true otherwise
-//    public static String check ( HttpURLConnection connection) throws IOException {
-//        int statusCode = connection.getResponseCode();
-//
-//        if (statusCode >= 300) {
-//            return false;
-//        }
-//        return true;
-//    }
     //finds the href in html body of url passed to method by creating BufferedReader
     //if href is found then create connection, checks code and calls itself
     public static int findHrefInURL ( HttpURLConnection connection, int urlHopsLeft,
@@ -205,6 +194,9 @@ public class WebCrawl {
         }
         String strURL = args[0];
         int numberURLHops = Integer.parseInt(args[1]);
+        if (numberURLHops <= 0) {
+            System.exit(0);
+        }
         if (!checkURLHTTPCorrect(strURL)) {
             System.out.println("Please enter valid url");
             System.exit(0);
@@ -217,7 +209,6 @@ public class WebCrawl {
             System.out.println("Please enter valid url");
             System.exit(0);
         }
-
 
         while ( statusCode >= 300) {
             strURL = connection.getHeaderField("Location");
@@ -234,7 +225,6 @@ public class WebCrawl {
             }
         }
 
-
         ArrayList <String> visitedURLs = new ArrayList<String>();
         visitedURLs.add(strURL);
         numberURLHops = findHrefInURL(connection, --numberURLHops, visitedURLs);
@@ -249,12 +239,6 @@ public class WebCrawl {
         }
     }
 }
-
-//https://www.tutorialspoint.com/market/prime-packs/office_productivity
-//https://www.tutorialspoint.com/market/teach_with_us.jsp
-//directed me to 404^
-
-//http://andreaserio.wordpress.com this webpage
 
 
 
