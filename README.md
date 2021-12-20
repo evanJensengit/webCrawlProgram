@@ -33,7 +33,11 @@ After the service is running you can test connectivity on port 45231
 ```sh
 curl -XGET http://localhost:45231/status
 ```
-
+Utilize the UI function by cd to app directory then run "npm install"  
+'''sh
+npm install #if you haven't already
+npm start #starts up localhost:3000 which should open automatically
+'''
 ## Getting gitlab running locally
 Follow the instructions here to get a gitlab instance running locally https://docs.gitlab.com/ee/install/docker.html
 
