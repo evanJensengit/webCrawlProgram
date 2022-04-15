@@ -1,4 +1,4 @@
-# CSS436
+# Web Crawler
 Download WebCrawl.java from this repo
 navigate terminal to directory where WebCrawl.java is located
 in terminal run "javac WebCrawl.java"
